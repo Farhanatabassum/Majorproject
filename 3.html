@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Event Registration Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6)),
+            url("https://upload.wikimedia.org/wikipedia/commons/c/c7/Messe_Luzern_Corporate_Event.jpg");
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: transparent;
+            width: 40%;
+            margin: 50px auto;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        input[type="submit"], button {
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 18px;
+            width: 100%;
+        }
+
+        input[type="submit"]:hover, button:hover {
+            background-color: #218838;
+        }
+    </style>
+    <script>
+        function showPopupMessage() {
+            alert("Thank you for registering!");
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>Event & Workshop Registration</h2>
+        <form action="#" method="post" onsubmit="showPopupMessage(); return false;">
+            <label for="name">Full Name:</label>
+            <input type="text" id="name" name="name" placeholder="Full Name" required>
+
+            <label for="email">Email Address:</label>
+            <input type="email" id="email" name="email" placeholder="Email" required>
+
+            <label for="phone">Phone Number:</label>
+            <input type="tel" id="phone" name="phone" placeholder="Phone Number" required>
+
+            <label for="event">Select Event Type:</label>
+            <select id="event" name="event" required>
+                <option value="">Select an Event</option>
+                <option value="workshop">Workshop</option>
+                <option value="seminar">Seminar</option>
+                <option value="conference">Conference</option>
+            </select>
+
+            <label for="session">Choose Workshop (If Applicable):</label>
+            <select id="session" name="session">
+                <option value="">Select a Workshop</option>
+                <option value="codecraft">CodeCraft: Mastering the Art of Programming</option>
+                <option value="designsprint">DesignSprint: UI/UX Essentials</option>
+                <option value="techtonic">TechTonic: Shifting the Digital Landscape</option>
+                <option value="innobuild">InnoBuild: Innovate and Create</option>
+                <option value="datadive">DataDive: Uncovering Insights</option>
+                <option value="creativecanvas">CreativeCanvas: Digital Design Workshop</option>
+                <option value="mindshift">MindShift: The Future of AI</option>
+                <option value="startuplab">StartupLab: From Idea to Launch</option>
+                <option value="cybersavvy">CyberSavvy: Security in the Digital Age</option>
+                <option value="webwizards">WebWizards: Front-End Development Essentials</option>
+            </select>
+
+            <label for="sessionTime">Choose Session Time:</label>
+            <select id="sessionTime" name="sessionTime">
+                <option value="">Select Session Time</option>
+                <option value="morning">Morning Session</option>
+                <option value="afternoon">Afternoon Session</option>
+                <option value="evening">Evening Session</option>
+            </select>
+
+            <button type="submit">Register</button>
+        </form>
+    </div>
+</body>
+</html>
