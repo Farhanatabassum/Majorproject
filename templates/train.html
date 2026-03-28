@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+
+{% block title %}Train Model - Radioactive Watermark Detector{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-brain"></i>
+                Train Model
+            </h2>
+                    </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs"></i>
+                    Training Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="trainingForm">
+                    <!-- Dataset Selection -->
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="datasetPath" class="form-label">Dataset Path</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="datasetPath" value="mirflickr" placeholder="Enter dataset folder path">
+                                <input type="file" id="datasetFolderInput" webkitdirectory directory style="display: none;" onchange="handleFolderSelect(event)">
+                                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('datasetFolderInput').click()">
+                                    <i class="fas fa-folder-open"></i> Browse
+                                </button>
+                                <button class="btn btn-outline-info" type="button" onclick="addDataset()">
+                                    <i class="fas fa-plus"></i> Add Dataset
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                Leave as "mirflickr" to use default dataset, or click Browse to select a folder. You can add multiple datasets for combined training. Supported formats: JPG, JPEG, PNG, BMP
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Multiple Datasets Display -->
+                    <div class="row" id="multipleDatasetsRow" style="display: none;">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Selected Datasets</label>
+                            <div id="selectedDatasets" class="border rounded p-2 bg-light">
+                                <!-- Datasets will be listed here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="sampleSize" class="form-label">Sample Size</label>
+                            <input type="number" class="form-control" id="sampleSize" value="5" min="5" max="1000">
+                            <div class="form-text">Number of images to sample from dataset (minimal for speed)</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="replaceCount" class="form-label">Replace Count</label>
+                            <input type="number" class="form-control" id="replaceCount" value="1" min="1" max="500">
+                            <div class="form-text">Number of watermarked images to replace with originals</div>
+                        </div>
+                    </div>
+                    
+                                        
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="watermarkType" class="form-label">Watermark Type</label>
+                            <select class="form-select" id="watermarkType">
+                                <option value="noise">Noise-based</option>
+                                <option value="logo">Logo</option>
+                                <option value="invisible">Invisible</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="learningRate" class="form-label">Learning Rate</label>
+                            <input type="number" class="form-control" id="learningRate" value="0.001" min="0.0001" max="0.1" step="0.0001">
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="trainBtn">
+                            <i class="fas fa-play"></i> Start Training
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i>
+                    Training Process
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>Steps:</h6>
+                <ol class="small">
+                    <li>Load dataset from images folder</li>
+                    <li>Randomly sample specified number of images</li>
+                    <li>Apply radioactive watermarks to sampled images</li>
+                    <li>Replace specified count with original images</li>
+                    <li>Create labeled dataset for training</li>
+                    <li>Train CNN model with specified parameters</li>
+                    <li>Evaluate model performance</li>
+                    <li>Save trained model for detection</li>
+                </ol>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>Tip:</strong> Training typically takes 5-15 minutes depending on dataset size and epochs.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Training Progress -->
+<div class="row mt-4" id="progressSection" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Training Progress
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         id="trainingProgress" role="progressbar" style="width: 0%">
+                        0%
+                    </div>
+                </div>
+                
+                <div id="trainingLog" class="bg-dark text-light p-3 rounded" style="height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                    <!-- Training log will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Training Results -->
+<div class="row mt-4" id="resultsSection" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line"></i>
+                    Training Results
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-primary" id="accuracyMetric">-</h4>
+                            <p class="mb-0">Accuracy</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-success" id="precisionMetric">-</h4>
+                            <p class="mb-0">Precision</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-warning" id="recallMetric">-</h4>
+                            <p class="mb-0">Recall</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-info" id="f1Metric">-</h4>
+                            <p class="mb-0">F1-Score</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Dataset Information:</h6>
+                    <div id="datasetInfo"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let trainingInterval;
+
+document.getElementById('trainingForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    startTraining();
+});
+
+// Multiple datasets management
+let selectedDatasets = [];
+
+function handleFolderSelect(event) {
+    const files = event.target.files;
+    if (files.length === 0) {
+        showError('No folder selected');
+        return;
+    }
+    
+    // Get the folder path from the first file
+    const firstFile = files[0];
+    const folderPath = firstFile.webkitRelativePath ? firstFile.webkitRelativePath.split('/')[0] : 'selected_folder';
+    
+    // For security reasons, browsers don't expose full paths
+    // We'll use the folder name and let user know they need to copy files to the working directory
+    document.getElementById('datasetPath').value = folderPath;
+    
+    showSuccess(`Folder "${folderPath}" selected with ${files.length} files. Note: For best results, copy the folder to the working directory.`);
+    
+    // Try to validate the folder (this will work if the folder exists in working directory)
+    selectDataset();
+}
+
+function addDataset() {
+    const datasetPath = document.getElementById('datasetPath').value.trim();
+    
+    if (!datasetPath) {
+        showError('Please enter a dataset path');
+        return;
+    }
+    
+    if (selectedDatasets.includes(datasetPath)) {
+        showError('Dataset already added');
+        return;
+    }
+    
+    // Validate dataset
+    fetch('/api/select-dataset', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dataset_path: datasetPath })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            selectedDatasets.push(datasetPath);
+            updateDatasetsDisplay();
+            document.getElementById('datasetPath').value = '';
+            showSuccess(`Dataset "${datasetPath}" added (${data.image_count} images)`);
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        showError('Failed to validate dataset: ' + error.message);
+    });
+}
+
+function updateDatasetsDisplay() {
+    const datasetsContainer = document.getElementById('selectedDatasets');
+    const multipleDatasetsRow = document.getElementById('multipleDatasetsRow');
+    
+    if (selectedDatasets.length === 0) {
+        multipleDatasetsRow.style.display = 'none';
+        return;
+    }
+    
+    multipleDatasetsRow.style.display = 'block';
+    
+    let datasetsHTML = '';
+    selectedDatasets.forEach((dataset, index) => {
+        datasetsHTML += `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span><i class="fas fa-folder"></i> ${dataset}</span>
+                <button class="btn btn-sm btn-outline-danger" onclick="removeDataset(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+    });
+    
+    datasetsContainer.innerHTML = datasetsHTML;
+}
+
+function removeDataset(index) {
+    selectedDatasets.splice(index, 1);
+    updateDatasetsDisplay();
+}
+
+function selectDataset() {
+    const datasetPath = document.getElementById('datasetPath').value.trim();
+    
+    if (!datasetPath) {
+        showError('Please enter a dataset path first');
+        return;
+    }
+    
+    // Validate single dataset
+    fetch('/api/select-dataset', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dataset_path: datasetPath })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showSuccess(`Dataset "${datasetPath}" is valid (${data.image_count} images)`);
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        showError('Failed to validate dataset: ' + error.message);
+    });
+}
+
+function startTraining() {
+    const trainBtn = document.getElementById('trainBtn');
+    const progressSection = document.getElementById('progressSection');
+    const resultsSection = document.getElementById('resultsSection');
+    const trainingLog = document.getElementById('trainingLog');
+    
+    // Reset UI
+    trainBtn.disabled = true;
+    trainBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Training...';
+    progressSection.style.display = 'block';
+    resultsSection.style.display = 'none';
+    trainingLog.innerHTML = '';
+    
+    // Get form data (epochs and batchSize are now hardcoded in backend)
+    const formData = {
+        sampleSize: parseInt(document.getElementById('sampleSize').value),
+        replaceCount: parseInt(document.getElementById('replaceCount').value),
+        watermarkType: document.getElementById('watermarkType').value,
+        learningRate: parseFloat(document.getElementById('learningRate').value),
+        datasets: selectedDatasets.length > 0 ? selectedDatasets : [document.getElementById('datasetPath').value]
+    };
+    
+    // Start training
+    fetch('/api/train', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showTrainingResults(data);
+        } else {
+            showError(data.message);
+        }
+    })
+    .catch(error => {
+        showError('Training failed: ' + error.message);
+    })
+    .finally(() => {
+        trainBtn.disabled = false;
+        trainBtn.innerHTML = '<i class="fas fa-play"></i> Start Training';
+        clearInterval(trainingInterval);
+    });
+    
+    // Simulate progress (in real implementation, this would come from WebSocket or server-sent events)
+    let progress = 0;
+    trainingInterval = setInterval(() => {
+        progress += Math.random() * 10;
+        if (progress > 90) progress = 90;
+        
+        updateProgress(progress);
+        
+        if (progress >= 90) {
+            clearInterval(trainingInterval);
+        }
+    }, 1000);
+}
+
+function selectDataset() {
+    const datasetPath = document.getElementById('datasetPath').value;
+    
+    if (!datasetPath.trim()) {
+        showError('Please enter a dataset path');
+        return;
+    }
+    
+    // Show loading
+    showNotification('Checking dataset...', 'info');
+    
+    fetch('/api/select-dataset', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            datasetPath: datasetPath
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showNotification(`Dataset selected: ${data.image_count} images found`, 'success');
+        } else {
+            showError(data.message || 'Failed to select dataset');
+        }
+    })
+    .catch(error => {
+        showError('Failed to select dataset: ' + error.message);
+    });
+}
+
+function updateProgress(progress) {
+    const progressBar = document.getElementById('trainingProgress');
+    progressBar.style.width = progress + '%';
+    progressBar.textContent = Math.round(progress) + '%';
+    
+    // Add log entries
+    const trainingLog = document.getElementById('trainingLog');
+    if (progress === 10) {
+        trainingLog.innerHTML += 'Loading dataset...<br>';
+    } else if (progress === 20) {
+        trainingLog.innerHTML += 'Sampling images...<br>';
+    } else if (progress === 30) {
+        trainingLog.innerHTML += 'Applying watermarks...<br>';
+    } else if (progress === 40) {
+        trainingLog.innerHTML += 'Creating dataset...<br>';
+    } else if (progress === 50) {
+        trainingLog.innerHTML += 'Initializing model...<br>';
+    } else if (progress === 60) {
+        trainingLog.innerHTML += 'Training started...<br>';
+    } else if (progress === 70) {
+        trainingLog.innerHTML += 'Training in progress...<br>';
+    } else if (progress === 80) {
+        trainingLog.innerHTML += 'Evaluating model...<br>';
+    } else if (progress === 90) {
+        trainingLog.innerHTML += 'Saving model...<br>';
+    }
+    
+    trainingLog.scrollTop = trainingLog.scrollHeight;
+}
+
+function showTrainingResults(data) {
+    const resultsSection = document.getElementById('resultsSection');
+    const progressBar = document.getElementById('trainingProgress');
+    
+    // Update progress to 100%
+    progressBar.style.width = '100%';
+    progressBar.textContent = '100%';
+    
+    // Update metrics
+    document.getElementById('accuracyMetric').textContent = (data.metrics.accuracy * 100).toFixed(2) + '%';
+    document.getElementById('precisionMetric').textContent = (data.metrics.precision * 100).toFixed(2) + '%';
+    document.getElementById('recallMetric').textContent = (data.metrics.recall * 100).toFixed(2) + '%';
+    document.getElementById('f1Metric').textContent = (data.metrics.f1_score * 100).toFixed(2) + '%';
+    
+    // Update dataset info
+    document.getElementById('datasetInfo').innerHTML = `
+        <p><strong>Total Images:</strong> ${data.dataset_info.total_images}</p>
+        <p><strong>Watermarked:</strong> ${data.dataset_info.watermarked}</p>
+        <p><strong>Original:</strong> ${data.dataset_info.original}</p>
+    `;
+    
+    // Show results
+    resultsSection.style.display = 'block';
+    
+    // Add final log entry
+    const trainingLog = document.getElementById('trainingLog');
+    trainingLog.innerHTML += '<br><span class="text-success">Training completed successfully!</span><br>';
+    trainingLog.scrollTop = trainingLog.scrollHeight;
+}
+
+function showError(message) {
+    const trainingLog = document.getElementById('trainingLog');
+    trainingLog.innerHTML += `<br><span class="text-danger">Error: ${message}</span><br>`;
+    trainingLog.scrollTop = trainingLog.scrollHeight;
+}
+
+</script>
+{% endblock %}
